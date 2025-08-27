@@ -176,6 +176,51 @@ router.get('/', async (req, res) => {
   }
 });
 
+// @route   GET /api/contact/export
+// @desc    Export contacts to CSV
+// @access  Private
+router.get('/export', async (req, res) => {
+  try {
+    const contacts = await Contact.find().select('-__v');
+    
+    if (!contacts.length) {
+      return res.status(404).json({
+        error: true,
+        message: 'No contacts found'
+      });
+    }
+
+    const csv = contacts.map(contact => ({
+      firstName: contact.firstName,
+      lastName: contact.lastName,
+      email: contact.email,
+      phone: contact.phone,
+      businessName: contact.businessName,
+      businessType: contact.businessType,
+      inquiryType: contact.inquiryType,
+      message: contact.message,
+      status: contact.status,
+      createdAt: contact.createdAt
+    }));
+
+    // Convert to CSV format
+    const csvString = [
+      Object.keys(csv[0]).join(','), // header
+      ...csv.map(row => Object.values(row).join(',')) // data
+    ].join('\n');
+
+    res.header('Content-Type', 'text/csv');
+    res.attachment('contacts.csv');
+    res.send(csvString);
+  } catch (error) {
+    console.error('Export contacts error:', error);
+    res.status(500).json({
+      error: true,
+      message: 'Failed to export contacts'
+    });
+  }
+});
+
 // @route   GET /api/contact/stats
 // @desc    Get contact statistics
 // @access  Private
